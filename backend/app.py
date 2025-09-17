@@ -4,7 +4,7 @@ import sqlite3
 from flask import Flask, request, jsonify, redirect, url_for
 from flask_cors import CORS
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timedelta
+from datetime import datetime
 import uuid
 import json
 
@@ -59,6 +59,11 @@ def publish_due_posts():
 scheduler.add_job(publish_due_posts, 'interval', seconds=30)
 scheduler.start()
 
+# ✅ Root route so Render URL works
+@app.route("/")
+def index():
+    return jsonify({"status": "ok", "message": "Multi-Platform Admin Backend is running 🚀"})
+
 @app.route('/health')
 def health():
     return jsonify({'status': 'ok', 'time': datetime.utcnow().isoformat()})
@@ -76,18 +81,12 @@ def list_accounts():
 
 @app.route('/accounts/connect/<platform>', methods=['GET'])
 def connect_platform(platform):
-    # Redirect user to the real OAuth consent page for the chosen platform.
-    # For the starter, we'll return a placeholder URL and then a dummy token exchange route.
-    # Replace these URLs with actual OAuth URLs for each platform.
     dummy_oauth_url = url_for('oauth_callback', platform=platform, _external=True) + "?code=demo_code"
     return redirect(dummy_oauth_url)
 
 @app.route('/oauth/callback/<platform>', methods=['GET'])
 def oauth_callback(platform):
-    # In real usage you'd receive `code` and exchange it for tokens.
     code = request.args.get('code')
-    # Placeholder: perform token exchange here using 'code'
-    # Save dummy account
     acc_id = str(uuid.uuid4())
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -105,7 +104,7 @@ def create_content():
     content = data.get('content', '')
     media_url = data.get('media_url', '')
     platforms = data.get('platforms', ['instagram'])
-    schedule_at = data.get('schedule_at')  # ISO datetime string in UTC or None for immediate
+    schedule_at = data.get('schedule_at')
     post_id = str(uuid.uuid4())
     status = 'scheduled' if schedule_at else 'published'
     conn = sqlite3.connect(DB_PATH)
